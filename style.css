@@ -1,0 +1,80 @@
+/* Footclaim site: the app's navy ground and single green accent. Fonts are served from this site, not Google. */
+@font-face { font-family: 'Barlow Condensed'; font-style: italic; font-weight: 800; font-display: swap; src: url('fonts/barlow-condensed-latin-800-italic.woff2') format('woff2'); }
+@font-face { font-family: 'Manrope'; font-weight: 400; font-display: swap; src: url('fonts/manrope-latin-400-normal.woff2') format('woff2'); }
+@font-face { font-family: 'Manrope'; font-weight: 700; font-display: swap; src: url('fonts/manrope-latin-700-normal.woff2') format('woff2'); }
+@font-face { font-family: 'Manrope'; font-weight: 800; font-display: swap; src: url('fonts/manrope-latin-800-normal.woff2') format('woff2'); }
+
+:root {
+  --navy: #141936;
+  --navy-deep: #0E1230;
+  --panel: #1F2650;
+  --line: #2F3866;
+  --green: #A7D457;
+  --map-green: #6E9F1E;
+  --white: #FFFFFF;
+  --mist: #A9B0D6;
+}
+
+* { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body {
+  margin: 0;
+  background: var(--navy);
+  color: var(--white);
+  font: 400 17px/1.6 Manrope, system-ui, -apple-system, 'Segoe UI', sans-serif;
+}
+a { color: var(--green); text-underline-offset: 3px; }
+a:hover { color: var(--white); }
+a:focus-visible { outline: 2px solid var(--green); outline-offset: 3px; border-radius: 4px; }
+
+.wrap { max-width: 720px; margin: 0 auto; padding: 0 20px; }
+
+header.site { padding: 24px 0; }
+header.site .wrap { display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+.brand { display: inline-flex; align-items: center; gap: 10px; color: var(--white); text-decoration: none; }
+.brand span { font: italic 800 28px/1 'Barlow Condensed', sans-serif; letter-spacing: 1px; }
+header.site nav { display: flex; gap: 18px; font-weight: 700; font-size: 15px; }
+header.site nav a { color: var(--mist); text-decoration: none; }
+header.site nav a:hover, header.site nav a[aria-current] { color: var(--white); }
+
+.display {
+  font: italic 800 clamp(48px, 12vw, 96px)/0.95 'Barlow Condensed', sans-serif;
+  text-transform: uppercase;
+  margin: 24px 0 20px;
+}
+.display em { font-style: inherit; color: var(--green); }
+.lead { color: var(--mist); font-size: 19px; max-width: 34em; }
+
+.loop { display: block; width: 100%; height: auto; margin: 32px 0 8px; }
+
+.steps { list-style: none; padding: 0; margin: 40px 0; display: grid; gap: 14px; }
+.steps li { background: var(--panel); border: 1px solid var(--line); border-radius: 20px; padding: 18px 20px; }
+.steps strong { display: block; font-weight: 800; }
+.steps span { color: var(--mist); }
+
+.beta { border-top: 1px solid var(--line); padding: 28px 0; color: var(--mist); }
+
+/* Legal pages */
+article.legal { padding: 8px 0 48px; }
+article.legal h1 { font: italic 800 clamp(40px, 9vw, 64px)/1 'Barlow Condensed', sans-serif; text-transform: uppercase; margin: 16px 0 8px; }
+article.legal .updated { color: var(--mist); margin: 0 0 32px; }
+article.legal h2 { font-weight: 800; font-size: 20px; margin: 36px 0 8px; }
+article.legal p, article.legal li { color: #E3E6F4; }
+article.legal ul { padding-left: 22px; }
+article.legal li { margin: 6px 0; }
+article.legal table { width: 100%; border-collapse: collapse; margin: 12px 0; font-size: 15px; }
+article.legal th, article.legal td { text-align: left; vertical-align: top; padding: 10px 12px; border-bottom: 1px solid var(--line); }
+article.legal th { color: var(--mist); font-weight: 700; }
+.summary { background: var(--panel); border: 1px solid var(--line); border-radius: 20px; padding: 18px 22px; margin: 0 0 8px; }
+.summary p { margin: 6px 0; }
+
+footer.site { border-top: 1px solid var(--line); padding: 24px 0 40px; color: var(--mist); font-size: 14px; }
+footer.site .wrap { display: flex; flex-wrap: wrap; gap: 8px 20px; justify-content: space-between; }
+
+@media (max-width: 520px) {
+  article.legal table, article.legal thead, article.legal tbody, article.legal tr, article.legal th, article.legal td { display: block; }
+  article.legal thead { display: none; }
+  article.legal td { border-bottom: none; padding: 4px 0; }
+  article.legal tr { border-bottom: 1px solid var(--line); padding: 10px 0; }
+  article.legal td:first-child { font-weight: 800; color: var(--white); }
+}
