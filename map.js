@@ -296,6 +296,8 @@ async function startMap(shared) {
     backgroundColor: '#1A2045',
     disableDefaultUI: true,
     zoomControl: true,
+    // Top right, clear of the "around me" button in the bottom corner.
+    zoomControlOptions: { position: google.maps.ControlPosition.RIGHT_TOP },
     gestureHandling: 'greedy',
     clickableIcons: false,
   });
@@ -312,7 +314,12 @@ async function startMap(shared) {
   state.map.addListener('idle', refresh);
   if (shared) {
     state.zones.set(shared.id, shared);
-    state.map.fitBounds(boundsOf(shared.geojson), 48);
+    // Frame the zone in the part of the map the panel does not cover: right of the column, above the sheet.
+    const phone = window.matchMedia('(max-width: 760px)').matches;
+    const pad = phone
+      ? { top: 24, right: 24, left: 24, bottom: Math.round(window.innerHeight * 0.5) }
+      : { top: 48, right: 72, bottom: 48, left: 408 };
+    state.map.fitBounds(boundsOf(shared.geojson), pad);
     showZone(shared);
   }
 }
