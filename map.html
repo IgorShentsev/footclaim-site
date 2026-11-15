@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Live map — Footclaim</title>
+<meta name="description" content="Every zone held right now: who walked the loop, how big it is and when it burns out. Plus the leaderboard.">
+<meta property="og:title" content="Footclaim live map">
+<meta property="og:description" content="Zones claimed on foot, live. Walk a loop and the ground inside is yours.">
+<link rel="icon" href="favicon.png">
+<link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="map.css">
+</head>
+<body class="map-page">
+<header class="site">
+  <div class="wrap">
+    <a class="brand" href="./" aria-label="Footclaim home">
+      <svg width="30" height="30" viewBox="5.5 2.2 15 20.5" fill="none" aria-hidden="true"><path d="M9.4 10.6 C9.6 8.6 13.6 7.6 15.6 9.2 C17.2 10.6 16.6 13.4 15.6 15.6 C14.9 17.2 15.4 19.4 14.4 21 C13.4 22.6 10.6 22.6 10.2 20.6 C9.8 18.8 11.4 17.2 11 15.2 C10.7 13.6 9.2 12.6 9.4 10.6 Z" stroke="#A7D457" stroke-width="2" stroke-linejoin="round"/><circle cx="9.4" cy="5.7" r="1.9" fill="#fff"/><circle cx="12.6" cy="4.5" r="1.35" fill="#fff"/><circle cx="15.1" cy="5.0" r="1.15" fill="#fff"/><circle cx="17.0" cy="6.3" r="0.95" fill="#fff"/><circle cx="18.2" cy="8.0" r="0.8" fill="#fff"/></svg>
+      <span>FOOTCLAIM</span>
+    </a>
+    <nav aria-label="Site">
+      <a href="map" aria-current="page">Map</a>
+      <a href="privacy.html">Privacy</a>
+      <a href="terms.html">Terms</a>
+    </nav>
+  </div>
+</header>
+
+<main class="map-wrap">
+  <div id="map" role="region" aria-label="Map of zones"></div>
+  <p id="map-fallback" class="map-fallback" hidden></p>
+
+  <button id="locate" class="map-button" type="button" aria-label="Show the map around me">
+    <svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 11 L21 3 L13 21 L11 13 Z" fill="currentColor"/></svg>
+  </button>
+
+  <aside id="panel" class="panel" aria-label="Zone and leaderboard">
+    <div class="grip" aria-hidden="true"></div>
+    <p id="notice" class="notice" role="status" hidden></p>
+
+    <section id="zone" class="zone" hidden aria-labelledby="zone-name">
+      <div class="zone-head">
+        <span id="zone-swatch" class="swatch" aria-hidden="true"></span>
+        <h2 id="zone-name"></h2>
+        <button id="zone-close" class="close" type="button" aria-label="Close zone">✕</button>
+      </div>
+      <p id="zone-meta" class="zone-meta"></p>
+      <p class="timer"><span id="timer-label">Burns out in</span> <span id="timer-clock" class="clock"></span></p>
+      <p id="zone-text" class="zone-text" hidden></p>
+      <a id="zone-link" class="zone-link" href="#" rel="nofollow noopener ugc" target="_blank" hidden></a>
+      <div class="zone-actions">
+        <button id="zone-share" class="button" type="button">Share this zone</button>
+        <a id="zone-report" class="quiet-link" href="#">Report</a>
+      </div>
+    </section>
+
+    <section class="board" aria-labelledby="board-title">
+      <h2 id="board-title">Leaderboard</h2>
+      <div class="tabs" role="tablist" aria-label="Leaderboard">
+        <button id="tab-global" role="tab" type="button" aria-selected="true" aria-controls="board-list">Global</button>
+        <button id="tab-local" role="tab" type="button" aria-selected="false" aria-controls="board-list">This area · 100 km</button>
+      </div>
+      <p id="board-caption" class="caption">Everyone, ranked by the ground they hold right now.</p>
+      <ol id="board-list" class="board-list" aria-live="polite"></ol>
+    </section>
+
+    <section class="join">
+      <p><strong>Walk a loop, own the ground inside.</strong> Footclaim is in a closed beta on iPhone in Limassol.</p>
+      <a class="button" href="mailto:hello@footclaim.app?subject=Footclaim%20beta">Ask to join the beta</a>
+    </section>
+  </aside>
+</main>
+
+<script src="map.js" defer></script>
+</body>
+</html>

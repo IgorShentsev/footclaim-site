@@ -1,0 +1,93 @@
+/* Elements here set their own display, which would otherwise beat the hidden attribute. */
+[hidden] { display: none !important; }
+
+/* Live map page: the map fills the window under the header; a panel holds the zone card and the leaderboard.
+   Desktop: a column on the left. Phone: a sheet along the bottom. */
+
+.map-page { height: 100vh; height: 100dvh; display: flex; flex-direction: column; overflow: hidden; }
+.map-page header.site { padding: 12px 0; flex: none; border-bottom: 1px solid var(--line); }
+.map-page header.site .wrap { max-width: none; }
+
+.map-wrap { position: relative; flex: 1; min-height: 0; }
+#map { position: absolute; inset: 0; background: #1A2045; }
+.map-fallback {
+  position: absolute; inset: 0; margin: 0; display: grid; place-items: center; padding: 24px;
+  text-align: center; color: var(--mist);
+}
+
+.map-button {
+  position: absolute; right: 16px; bottom: 24px; width: 48px; height: 48px; border-radius: 16px;
+  border: 1px solid var(--line); background: var(--panel); color: var(--white); cursor: pointer;
+  display: grid; place-items: center;
+}
+.map-button:hover { border-color: var(--mist); }
+.map-button:focus-visible, .panel button:focus-visible, .panel a:focus-visible { outline: 2px solid var(--green); outline-offset: 2px; }
+
+.panel {
+  position: absolute; left: 16px; top: 16px; bottom: 16px; width: 360px; overflow-y: auto;
+  background: var(--navy); border: 1px solid var(--line); border-radius: 20px; padding: 20px;
+  display: flex; flex-direction: column; gap: 20px;
+}
+.grip { display: none; }
+
+.notice { margin: 0; padding: 12px 14px; border-radius: 14px; background: var(--panel); color: var(--mist); font-size: 14px; }
+
+/* Zone card */
+.zone { display: flex; flex-direction: column; gap: 8px; padding-bottom: 20px; border-bottom: 1px solid var(--line); }
+.zone-head { display: flex; align-items: center; gap: 10px; }
+.zone h2 { flex: 1; margin: 0; font-size: 19px; font-weight: 800; line-height: 1.25; overflow-wrap: anywhere; }
+.swatch { width: 14px; height: 14px; border-radius: 4px; flex: none; }
+.close { background: none; border: 0; color: var(--mist); font-size: 18px; cursor: pointer; padding: 4px; }
+.close:hover { color: var(--white); }
+.zone-meta { margin: 0; color: var(--mist); font-size: 14px; font-weight: 700; }
+.timer { margin: 0; color: var(--mist); font-size: 14px; }
+.clock { color: var(--white); font-weight: 800; font-size: 16px; font-variant-numeric: tabular-nums; }
+.clock.urgent { color: var(--danger); }
+.zone-text { margin: 4px 0 0; color: #E3E6F4; font-size: 15px; line-height: 1.5; overflow-wrap: anywhere; }
+.zone-link { font-size: 15px; font-weight: 700; overflow-wrap: anywhere; }
+.zone-actions { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 8px; }
+.quiet-link { color: var(--mist); font-size: 14px; }
+
+.button {
+  display: inline-block; border: 0; border-radius: 14px; padding: 11px 16px; cursor: pointer;
+  background: var(--green); color: var(--navy); font: 800 15px/1.2 Manrope, system-ui, sans-serif; text-decoration: none;
+}
+.button:hover { color: var(--navy); filter: brightness(1.08); }
+
+/* Leaderboard */
+.board h2 { margin: 0 0 12px; font: italic 800 30px/1 'Barlow Condensed', sans-serif; text-transform: uppercase; letter-spacing: .5px; }
+.tabs { display: flex; gap: 4px; padding: 4px; border-radius: 14px; background: var(--panel); border: 1px solid var(--line); }
+.tabs button {
+  flex: 1; border: 0; border-radius: 10px; padding: 9px 6px; cursor: pointer; background: none;
+  color: var(--mist); font: 700 14px/1.2 Manrope, system-ui, sans-serif;
+}
+.tabs button[aria-selected="true"] { background: var(--white); color: var(--navy); }
+.caption { margin: 10px 0 8px; color: var(--mist); font-size: 13px; line-height: 1.45; }
+.board-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 2px; }
+.board-list li { display: grid; grid-template-columns: 30px 12px 1fr auto; align-items: center; gap: 10px; padding: 9px 6px; border-radius: 12px; }
+.board-list .place { font: italic 800 20px/1 'Barlow Condensed', sans-serif; color: var(--mist); text-align: center; }
+.board-list .top { color: var(--white); }
+.board-list .who { min-width: 0; }
+.board-list .name { display: block; font-weight: 800; font-size: 15px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.board-list .meta { display: block; color: var(--mist); font-size: 12.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.board-list .area { font: italic 800 19px/1 'Barlow Condensed', sans-serif; white-space: nowrap; }
+.board-list .unit { font: 600 12px Manrope, sans-serif; color: var(--mist); }
+.board-list .empty { display: block; color: var(--mist); font-size: 14px; padding: 8px 0; }
+
+.join { margin-top: auto; padding-top: 20px; border-top: 1px solid var(--line); color: var(--mist); font-size: 14px; line-height: 1.5; }
+.join p { margin: 0 0 12px; }
+.join strong { color: var(--white); }
+
+/* Phone: the panel becomes a sheet along the bottom; the map keeps the top. */
+@media (max-width: 760px) {
+  .map-page header.site nav { gap: 14px; }
+  .panel {
+    left: 0; right: 0; top: auto; bottom: 0; width: auto; max-height: 48%;
+    border-radius: 24px 24px 0 0; border-bottom: 0; padding: 10px 16px calc(16px + env(safe-area-inset-bottom));
+    gap: 16px;
+  }
+  .grip { display: block; width: 40px; height: 4px; border-radius: 2px; background: var(--line); margin: 0 auto; flex: none; }
+  .map-button { bottom: calc(48% + 12px); }
+  .join { display: none; }
+  .panel.has-zone .board { display: none; }
+}
