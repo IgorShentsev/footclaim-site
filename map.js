@@ -284,7 +284,7 @@ async function startMap(shared) {
     await loadGoogle();
   } catch {
     const fb = $('map-fallback');
-    fb.textContent = 'The map can’t load here right now. The leaderboard below still works.';
+    fb.textContent = 'The map can’t load here right now. The zone card and the leaderboard still work.';
     fb.hidden = false;
     $('locate').hidden = true;
     return;
