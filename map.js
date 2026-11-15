@@ -5,7 +5,7 @@
 const SUPABASE_URL = 'https://zacyvbrvvdwkqngygvas.supabase.co';
 const PUBLISHABLE_KEY = 'sb_publishable_ZtmO4_4SefobCFn9m4sTmA_LQd_O6PU';
 // Browser key, restricted to footclaim.app in Google Cloud: it is meant to be public.
-const GOOGLE_MAPS_KEY = '';
+const GOOGLE_MAPS_KEY = 'AIzaSyDI-wpdPMnV7EqMAna6oYxM2sNhydwNxWs';
 const SITE = 'https://footclaim.app';
 const LIMASSOL = { lat: 34.6786, lng: 33.0413 };
 const RADIUS_KM = 100;
