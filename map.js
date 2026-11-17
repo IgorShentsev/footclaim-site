@@ -26,7 +26,11 @@ const NAVY_STYLE = [
 ];
 
 const $ = (id) => document.getElementById(id);
-const state = { map: null, zones: new Map(), selected: null, tab: 'global', boardSeq: 0, zoneSeq: 0, tick: null };
+const state = { map: null, zones: new Map(), logos: new Map(), selected: null, tab: 'global', boardSeq: 0, zoneSeq: 0, tick: null };
+const M_PER_DEG = 111320;
+const LOGO_MAX = 25; // same rule as the app: at most 25 logos, each at least 1/25 of the visible height
+
+const logoUrl = (path) => `${SUPABASE_URL}/storage/v1/object/public/zone-logos/${path}`;
 
 // ---------- data ----------
 
@@ -73,6 +77,10 @@ function showZone(z) {
   $('panel').classList.add('has-zone');
   $('zone').hidden = false;
   $('zone-swatch').style.background = zoneColor(z.owner_id, z.style && z.style.color);
+  const logo = $('zone-logo');
+  if (z.logo_path) logo.src = logoUrl(z.logo_path);
+  logo.hidden = !z.logo_path;
+  $('zone-swatch').hidden = !!z.logo_path;
   $('zone-name').textContent = z.name;
   $('zone-meta').textContent = `${z.blocked ? 'Blocked player' : '@' + z.owner_handle} · ${formatArea(z.area_m2)}`;
   const text = $('zone-text');
@@ -246,9 +254,37 @@ async function loadZones() {
         state.zones.delete(id);
       }
     });
+    drawLogos(rows, ne.lat() - sw.lat());
     notice('');
   } catch {
     notice('Can’t load zones right now. Check your connection.');
+  }
+}
+
+/**
+ * Each approved logo fills a square in the middle of its zone (inside the biggest circle that fits), so it grows
+ * and shrinks with the zone. Only logos big enough to see at this zoom are drawn, biggest first.
+ */
+function drawLogos(rows, visibleDeg) {
+  const minHalf = (visibleDeg * M_PER_DEG) / 50;
+  const want = rows
+    .filter((z) => z.logo_path && z.logo_lat !== null && z.logo_lon !== null && z.logo_half_m >= minHalf)
+    .sort((a, b) => b.logo_half_m - a.logo_half_m)
+    .slice(0, LOGO_MAX);
+  const keys = new Set(want.map((z) => `${z.id}|${z.logo_path}`));
+  for (const [key, overlay] of state.logos) {
+    if (!keys.has(key)) {
+      overlay.setMap(null);
+      state.logos.delete(key);
+    }
+  }
+  for (const z of want) {
+    const key = `${z.id}|${z.logo_path}`;
+    if (state.logos.has(key)) continue;
+    const dLat = z.logo_half_m / M_PER_DEG;
+    const dLng = z.logo_half_m / (M_PER_DEG * Math.cos((z.logo_lat * Math.PI) / 180));
+    const box = { north: z.logo_lat + dLat, south: z.logo_lat - dLat, east: z.logo_lon + dLng, west: z.logo_lon - dLng };
+    state.logos.set(key, new google.maps.GroundOverlay(logoUrl(z.logo_path), box, { clickable: false, map: state.map }));
   }
 }
 
