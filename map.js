@@ -26,9 +26,10 @@ const NAVY_STYLE = [
 ];
 
 const $ = (id) => document.getElementById(id);
-const state = { map: null, zones: new Map(), logos: new Map(), selected: null, tab: 'global', boardSeq: 0, zoneSeq: 0, tick: null };
+const state = { map: null, zones: new Map(), pins: new Map(), rows: [], selected: null, tab: 'global', boardSeq: 0, zoneSeq: 0, tick: null };
 const M_PER_DEG = 111320;
-const LOGO_MAX = 25; // same rule as the app: at most 25 logos, each at least 1/25 of the visible height
+const PIN_MAX = 30;
+let Pin = null; // the pin overlay class, made once Google Maps has loaded
 
 const logoUrl = (path) => `${SUPABASE_URL}/storage/v1/object/public/zone-logos/${path}`;
 
@@ -44,8 +45,41 @@ async function rpc(name, body) {
   return res.json();
 }
 
+// ---------- colours: the same rules as the app (mobile/src/lib/colors.ts) ----------
+
+const NAVY = '#141936';
+const OWN_GREEN = '#A7D457';
+const isHex = (c) => /^#[0-9a-f]{6}$/i.test(c);
+const rgb = (hex) => {
+  const n = parseInt(hex.slice(1), 16);
+  return [(n >> 16) & 255, (n >> 8) & 255, n & 255];
+};
+const linear = (c) => {
+  const x = c / 255;
+  return x <= 0.04045 ? x / 12.92 : ((x + 0.055) / 1.055) ** 2.4;
+};
+const luminance = (hex) => {
+  const [r, g, b] = rgb(hex).map(linear);
+  return 0.2126 * r + 0.7152 * g + 0.0722 * b;
+};
+function lab(hex) {
+  const [r, g, b] = rgb(hex).map(linear);
+  const f = [(0.4124 * r + 0.3576 * g + 0.1805 * b) / 0.95047, 0.2126 * r + 0.7152 * g + 0.0722 * b, (0.0193 * r + 0.1192 * g + 0.9505 * b) / 1.08883]
+    .map((t) => (t > 0.008856 ? Math.cbrt(t) : 7.787 * t + 16 / 116));
+  return [116 * f[1] - 16, 500 * (f[0] - f[1]), 200 * (f[1] - f[2])];
+}
+/** A picked colour shows only if it stands out on the navy map and is not close to the "your zone" green. */
+function colourOk(hex) {
+  if (!isHex(hex)) return false;
+  const [hi, lo] = [luminance(hex), luminance(NAVY)].sort((a, b) => b - a);
+  if ((hi + 0.05) / (lo + 0.05) < 1.9) return false;
+  const [l1, a1, b1] = lab(hex);
+  const [l2, a2, b2] = lab(OWN_GREEN);
+  return Math.hypot(l1 - l2, a1 - a2, b1 - b2) >= 25;
+}
+
 function zoneColor(ownerId, picked) {
-  if (picked && PLAYER_COLORS.includes(String(picked).toUpperCase())) return String(picked).toUpperCase();
+  if (picked && colourOk(String(picked))) return String(picked).toUpperCase();
   let h = 0;
   for (let i = 0; i < ownerId.length; i++) h = (h * 31 + ownerId.charCodeAt(i)) >>> 0;
   return PLAYER_COLORS[h % PLAYER_COLORS.length];
@@ -77,10 +111,12 @@ function showZone(z) {
   $('panel').classList.add('has-zone');
   $('zone').hidden = false;
   $('zone-swatch').style.background = zoneColor(z.owner_id, z.style && z.style.color);
+  const pic = pinPicture(z);
   const logo = $('zone-logo');
-  if (z.logo_path) logo.src = logoUrl(z.logo_path);
-  logo.hidden = !z.logo_path;
-  $('zone-swatch').hidden = !!z.logo_path;
+  if (pic) logo.src = logoUrl(pic.path);
+  logo.classList.toggle('avatar', !!pic && pic.kind === 'avatar');
+  logo.hidden = !pic;
+  $('zone-swatch').hidden = !!pic;
   $('zone-name').textContent = z.name;
   $('zone-meta').textContent = `${z.blocked ? 'Blocked player' : '@' + z.owner_handle} · ${formatArea(z.area_m2)}`;
   const text = $('zone-text');
@@ -100,6 +136,7 @@ function showZone(z) {
   state.tick = setInterval(tickTimer, 1000);
   history.replaceState(null, '', `map?z=${z.id}`);
   restyle();
+  drawPins();
 }
 
 function hideZone() {
@@ -109,6 +146,7 @@ function hideZone() {
   $('panel').classList.remove('has-zone');
   history.replaceState(null, '', 'map');
   restyle();
+  drawPins();
 }
 
 function tickTimer() {
@@ -189,9 +227,18 @@ function renderBoard(rows) {
     const place = document.createElement('span');
     place.className = 'place' + (r.place <= 3 ? ' top' : '');
     place.textContent = r.place;
-    const sw = document.createElement('span');
-    sw.className = 'swatch';
-    sw.style.background = zoneColor(r.player_id, r.color);
+    let sw;
+    if (r.avatar_path) {
+      sw = document.createElement('img');
+      sw.src = logoUrl(r.avatar_path);
+      sw.alt = '';
+    } else {
+      sw = document.createElement('span');
+      sw.textContent = (r.display_name || '?').trim().charAt(0).toUpperCase();
+      sw.style.background = zoneColor(r.player_id, r.color);
+    }
+    sw.className = 'avatar';
+    sw.setAttribute('aria-hidden', 'true');
     const who = document.createElement('span');
     who.className = 'who';
     const name = document.createElement('span');
@@ -254,37 +301,109 @@ async function loadZones() {
         state.zones.delete(id);
       }
     });
-    drawLogos(rows, ne.lat() - sw.lat());
+    state.rows = rows;
+    drawPins();
     notice('');
   } catch {
     notice('Can’t load zones right now. Check your connection.');
   }
 }
 
+// ---------- pins: the same rules as the app (mobile/src/lib/pins.ts) ----------
+
+/** A zone's logo, else its owner's avatar, else no pin. */
+function pinPicture(z) {
+  if (z.logo_path) return { kind: 'logo', path: z.logo_path };
+  if (z.avatar_path) return { kind: 'avatar', path: z.avatar_path };
+  return null;
+}
+
+/** 36 px for a 1 000 m² zone, +12 for every ten times more ground, up to 72. */
+const pinSize = (area) => Math.round(Math.min(72, 36 + 12 * Math.log10(Math.max(area, 1000) / 1000)));
+
+function makePinClass() {
+  return class extends google.maps.OverlayView {
+    constructor(zone, picture, size) {
+      super();
+      this.at = new google.maps.LatLng(zone.logo_lat, zone.logo_lon);
+      const el = document.createElement('button');
+      el.type = 'button';
+      el.className = `pin ${picture.kind}`;
+      el.style.setProperty('--size', `${size}px`);
+      el.setAttribute('aria-label', `${zone.name}, @${zone.owner_handle}`);
+      const img = document.createElement('img');
+      img.src = logoUrl(picture.path);
+      img.alt = '';
+      el.append(img);
+      el.addEventListener('click', (e) => {
+        e.stopPropagation();
+        showZone(state.zones.get(zone.id) || zone);
+      });
+      this.el = el;
+    }
+    onAdd() {
+      this.getPanes().overlayMouseTarget.append(this.el);
+    }
+    draw() {
+      const p = this.getProjection().fromLatLngToDivPixel(this.at);
+      if (!p) return;
+      this.el.style.left = `${p.x}px`;
+      this.el.style.top = `${p.y}px`;
+    }
+    onRemove() {
+      this.el.remove();
+    }
+  };
+}
+
 /**
- * Each approved logo fills a square in the middle of its zone (inside the biggest circle that fits), so it grows
- * and shrinks with the zone. Only logos big enough to see at this zoom are drawn, biggest first.
+ * Pins for the zones in view, biggest first: a zone at least about 1/60 of the map's height gets one, a pin that
+ * would cover a bigger zone's pin is left out, at most 30. The selected zone always keeps its pin.
  */
-function drawLogos(rows, visibleDeg) {
-  const minHalf = (visibleDeg * M_PER_DEG) / 50;
-  const want = rows
-    .filter((z) => z.logo_path && z.logo_lat !== null && z.logo_lon !== null && z.logo_half_m >= minHalf)
-    .sort((a, b) => b.logo_half_m - a.logo_half_m)
-    .slice(0, LOGO_MAX);
-  const keys = new Set(want.map((z) => `${z.id}|${z.logo_path}`));
-  for (const [key, overlay] of state.logos) {
-    if (!keys.has(key)) {
-      overlay.setMap(null);
-      state.logos.delete(key);
+function drawPins() {
+  if (!Pin || !state.map) return;
+  const b = state.map.getBounds();
+  if (!b) return;
+  const sw = b.getSouthWest();
+  const ne = b.getNorthEast();
+  const box = $('map').getBoundingClientRect();
+  const latSpan = ne.lat() - sw.lat();
+  const lngSpan = (ne.lng() - sw.lng() + 360) % 360 || 360;
+  const visibleM = latSpan * M_PER_DEG;
+  const selectedId = state.selected && state.selected.id;
+  const rows = state.rows.slice();
+  if (state.selected && !rows.some((z) => z.id === selectedId)) rows.push(state.selected);
+  const candidates = rows
+    .filter((z) => z.logo_lat !== null && z.logo_lon !== null && pinPicture(z))
+    .filter((z) => z.id === selectedId || (z.logo_half_m / 0.62) * 2 >= visibleM / 60)
+    .sort((a, b) => (b.id === selectedId) - (a.id === selectedId) || b.area_m2 - a.area_m2);
+  const placed = [];
+  const want = new Map();
+  for (const z of candidates) {
+    if (want.size >= PIN_MAX) break;
+    const size = pinSize(z.area_m2);
+    const x = ((z.logo_lon - sw.lng()) / lngSpan) * box.width;
+    const y = ((ne.lat() - z.logo_lat) / latSpan) * box.height;
+    if (z.id !== selectedId) {
+      if (placed.some((p) => Math.hypot(p.x - x, p.y - y) < 0.8 * ((p.size + size) / 2))) continue;
+      placed.push({ x, y, size });
+    }
+    const picture = pinPicture(z);
+    want.set(`${z.id}|${picture.path}|${size}`, { z, picture, size });
+  }
+  for (const [key, pin] of state.pins) {
+    if (!want.has(key)) {
+      pin.setMap(null);
+      state.pins.delete(key);
     }
   }
-  for (const z of want) {
-    const key = `${z.id}|${z.logo_path}`;
-    if (state.logos.has(key)) continue;
-    const dLat = z.logo_half_m / M_PER_DEG;
-    const dLng = z.logo_half_m / (M_PER_DEG * Math.cos((z.logo_lat * Math.PI) / 180));
-    const box = { north: z.logo_lat + dLat, south: z.logo_lat - dLat, east: z.logo_lon + dLng, west: z.logo_lon - dLng };
-    state.logos.set(key, new google.maps.GroundOverlay(logoUrl(z.logo_path), box, { clickable: false, map: state.map }));
+  for (const [key, { z, picture, size }] of want) {
+    if (!state.pins.has(key)) {
+      const pin = new Pin(z, picture, size);
+      pin.setMap(state.map);
+      state.pins.set(key, pin);
+    }
+    state.pins.get(key).el.classList.toggle('on', z.id === selectedId);
   }
 }
 
@@ -338,6 +457,7 @@ async function startMap(shared) {
     clickableIcons: false,
   });
   restyle();
+  Pin = makePinClass();
   state.map.data.addListener('click', (e) => {
     const z = state.zones.get(e.feature.getId());
     if (z) showZone(z);
