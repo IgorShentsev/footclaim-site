@@ -32,13 +32,55 @@
 
 .notice { margin: 0; padding: 12px 14px; border-radius: 14px; background: var(--panel); color: var(--mist); font-size: 14px; }
 
-/* Zone card */
-.zone { display: flex; flex-direction: column; gap: 8px; padding-bottom: 20px; border-bottom: 1px solid var(--line); }
-.zone-head { display: flex; align-items: center; gap: 10px; }
-.zone h2 { flex: 1; margin: 0; font-size: 19px; font-weight: 800; line-height: 1.25; overflow-wrap: anywhere; }
-.swatch { width: 14px; height: 14px; border-radius: 4px; flex: none; }
-.zone-logo { width: 32px; height: 32px; border-radius: 8px; object-fit: cover; flex: none; background: #141936; }
-.zone-logo.avatar { border-radius: 50%; }
+/* Zone card: a band in the zone's colour, its picture stuck over the edge (as in the app) */
+.zone { position: relative; border-radius: 22px; background: var(--panel); border: 1px solid var(--line); overflow: hidden; flex: none; }
+.zone-band {
+  height: 84px; box-sizing: border-box; padding: 12px 12px 0 16px;
+  display: flex; align-items: flex-start; justify-content: space-between; gap: 12px;
+  background-color: #9B7BFF;
+  background-image: repeating-linear-gradient(135deg, rgba(20, 25, 54, 0.12) 0 2px, transparent 2px 12px);
+}
+.zone-badge {
+  max-width: 70%; height: 28px; box-sizing: border-box; display: inline-flex; align-items: center; padding: 0 12px;
+  border-radius: 14px; background: var(--navy); color: var(--white); font-size: 13px; font-weight: 800;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.band-button {
+  width: 36px; height: 36px; flex: none; border: 0; border-radius: 50%; cursor: pointer;
+  display: grid; place-items: center; background: rgba(20, 25, 54, 0.55); color: var(--white);
+}
+.band-button:hover { background: rgba(20, 25, 54, 0.75); }
+.zone-sticker {
+  position: absolute; left: 16px; top: 44px; width: 76px; height: 76px; box-sizing: border-box;
+  border: 4px solid #fff; border-radius: 20px; background: #fff; object-fit: cover;
+  box-shadow: 0 6px 16px rgba(5, 8, 24, 0.45);
+}
+.zone-sticker.avatar { border-radius: 50%; }
+.zone-body { padding: 8px 16px 16px; display: flex; flex-direction: column; gap: 12px; }
+.zone-title { min-height: 44px; display: flex; flex-direction: column; justify-content: center; }
+.zone.has-picture .zone-title { margin-left: 90px; }
+.zone h2 { margin: 0; font: italic 800 32px/1 'Barlow Condensed', sans-serif; overflow-wrap: anywhere; }
+.zone-by { margin: 2px 0 0; color: var(--mist); font-size: 14px; font-weight: 600; }
+.zone-text { margin: 0; color: var(--white); font-size: 17px; font-weight: 600; line-height: 1.4; overflow-wrap: anywhere; }
+.zone-facts { margin: 0; display: flex; flex-wrap: wrap; align-items: center; gap: 12px; font-size: 15px; font-weight: 800; font-variant-numeric: tabular-nums; }
+.fact { display: inline-flex; align-items: center; gap: 7px; }
+.fact-divider { width: 1px; height: 18px; background: var(--line); }
+.muted { color: var(--mist); font-weight: 600; }
+.clock.urgent { color: var(--danger); }
+.zone-link-row {
+  height: 48px; box-sizing: border-box; display: flex; align-items: center; gap: 10px; padding: 0 14px;
+  border-radius: 14px; background: var(--navy); color: var(--white); font-size: 15px; font-weight: 700; text-decoration: none;
+}
+.zone-link-row span { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.zone-link-row:hover { background: #0E1230; }
+.zone-actions { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+.zone-action {
+  height: 46px; box-sizing: border-box; display: flex; align-items: center; justify-content: center; gap: 8px;
+  border: 0; border-radius: 14px; background: #2A3260; color: var(--white); cursor: pointer;
+  font: 800 15px/1 Manrope, system-ui, sans-serif; text-decoration: none;
+}
+.zone-action:hover { background: #333C70; }
+.visually-hidden { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 
 /* A zone's logo (rounded square) or its owner's avatar (circle), pinned like a sticker; the tail points at the zone. */
 .pin {
@@ -67,16 +109,7 @@
 .pin.avatar, .pin.avatar img { border-radius: 50%; }
 .pin.on { z-index: 2; box-shadow: 0 0 0 3px var(--green, #A7D457), 0 2px 8px rgba(0, 0, 0, 0.4); }
 .pin:focus-visible { outline: 3px solid #fff; outline-offset: 3px; }
-.close { background: none; border: 0; color: var(--mist); font-size: 18px; cursor: pointer; padding: 4px; }
-.close:hover { color: var(--white); }
-.zone-meta { margin: 0; color: var(--mist); font-size: 14px; font-weight: 700; }
-.timer { margin: 0; color: var(--mist); font-size: 14px; }
 .clock { color: var(--white); font-weight: 800; font-size: 16px; font-variant-numeric: tabular-nums; }
-.clock.urgent { color: var(--danger); }
-.zone-text { margin: 4px 0 0; color: #E3E6F4; font-size: 15px; line-height: 1.5; overflow-wrap: anywhere; }
-.zone-link { font-size: 15px; font-weight: 700; overflow-wrap: anywhere; }
-.zone-actions { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 8px; }
-.quiet-link { color: var(--mist); font-size: 14px; }
 
 .button {
   display: inline-block; border: 0; border-radius: 14px; padding: 11px 16px; cursor: pointer;
@@ -121,4 +154,7 @@
   .map-button { bottom: calc(48% + 12px); }
   .join { display: none; }
   .panel.has-zone .board { display: none; }
+  /* The whole zone card fits without scrolling inside the sheet. */
+  .panel.has-zone { max-height: 64%; }
+  .map-page:has(.panel.has-zone) .map-button { bottom: calc(64% + 12px); }
 }

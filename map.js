@@ -110,22 +110,26 @@ function showZone(z) {
   state.selected = z;
   $('panel').classList.add('has-zone');
   $('zone').hidden = false;
-  $('zone-swatch').style.background = zoneColor(z.owner_id, z.style && z.style.color);
+  // The card wears the zone: a band in its colour, its logo (else its owner's avatar) stuck over the edge.
+  const owner = z.blocked ? 'Blocked player' : `@${z.owner_handle}`;
+  $('zone-band').style.backgroundColor = zoneColor(z.owner_id, z.style && z.style.color);
+  $('zone-badge').textContent = owner;
   const pic = pinPicture(z);
   const logo = $('zone-logo');
   if (pic) logo.src = logoUrl(pic.path);
   logo.classList.toggle('avatar', !!pic && pic.kind === 'avatar');
   logo.hidden = !pic;
-  $('zone-swatch').hidden = !!pic;
+  $('zone').classList.toggle('has-picture', !!pic);
   $('zone-name').textContent = z.name;
-  $('zone-meta').textContent = `${z.blocked ? 'Blocked player' : '@' + z.owner_handle} · ${formatArea(z.area_m2)}`;
+  $('zone-meta').textContent = `by ${owner}`;
+  $('zone-area').textContent = formatArea(z.area_m2);
   const text = $('zone-text');
   text.textContent = z.text || '';
   text.hidden = !z.text;
   const link = $('zone-link');
   if (z.link_url) {
     link.href = z.link_url;
-    link.textContent = z.link_url.replace(/^https:\/\//, '');
+    $('zone-link-text').textContent = z.link_url.replace(/^https?:\/\//, '').replace(/\/$/, '');
     link.hidden = false;
   } else {
     link.hidden = true;
@@ -153,10 +157,11 @@ function tickTimer() {
   const z = state.selected;
   if (!z) return;
   const left = Date.parse(z.expires_at) - Date.now();
-  $('timer-label').textContent = left > 0 ? 'Burns out in' : 'Burnt out';
+  $('timer-label').textContent = left > 0 ? 'Burns out in' : '';
   const clock = $('timer-clock');
-  clock.textContent = left > 0 ? formatCountdown(left) : '';
+  clock.textContent = left > 0 ? formatCountdown(left) : 'Burnt out';
   clock.classList.toggle('urgent', left > 0 && left < WARNING_MS);
+  $('timer-left').hidden = left <= 0;
 }
 
 async function share() {
@@ -170,8 +175,8 @@ async function share() {
       return;
     }
     await navigator.clipboard.writeText(url);
-    $('zone-share').textContent = 'Link copied';
-    setTimeout(() => ($('zone-share').textContent = 'Share this zone'), 2000);
+    $('zone-share-label').textContent = 'Link copied';
+    setTimeout(() => ($('zone-share-label').textContent = 'Share'), 2000);
   } catch {
     // Share sheet dismissed: nothing to do.
   }

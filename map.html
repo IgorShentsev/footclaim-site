@@ -9,7 +9,7 @@
 <meta property="og:description" content="Zones claimed on foot, live. Walk a loop and the ground inside is yours.">
 <link rel="icon" href="favicon.png">
 <link rel="stylesheet" href="style.css">
-<link rel="stylesheet" href="map.css?v=4">
+<link rel="stylesheet" href="map.css?v=5">
 </head>
 <body class="map-page">
 <header class="site">
@@ -39,19 +39,47 @@
     <p id="notice" class="notice" role="status" hidden></p>
 
     <section id="zone" class="zone" hidden aria-labelledby="zone-name">
-      <div class="zone-head">
-        <span id="zone-swatch" class="swatch" aria-hidden="true"></span>
-        <img id="zone-logo" class="zone-logo" alt="" hidden>
-        <h2 id="zone-name"></h2>
-        <button id="zone-close" class="close" type="button" aria-label="Close zone">✕</button>
+      <div id="zone-band" class="zone-band">
+        <span id="zone-badge" class="zone-badge"></span>
+        <button id="zone-close" class="band-button" type="button" aria-label="Close zone">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>
+        </button>
       </div>
-      <p id="zone-meta" class="zone-meta"></p>
-      <p class="timer"><span id="timer-label">Burns out in</span> <span id="timer-clock" class="clock"></span></p>
-      <p id="zone-text" class="zone-text" hidden></p>
-      <a id="zone-link" class="zone-link" href="#" rel="nofollow noopener ugc" target="_blank" hidden></a>
-      <div class="zone-actions">
-        <button id="zone-share" class="button" type="button">Share this zone</button>
-        <a id="zone-report" class="quiet-link" href="#">Report</a>
+      <img id="zone-logo" class="zone-sticker" alt="" hidden>
+      <div class="zone-body">
+        <div class="zone-title">
+          <h2 id="zone-name"></h2>
+          <p id="zone-meta" class="zone-by"></p>
+        </div>
+        <p id="zone-text" class="zone-text" hidden></p>
+        <p class="zone-facts">
+          <span class="fact">
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#A9B0D6" stroke-width="2.2" stroke-dasharray="3 3" aria-hidden="true"><rect x="4" y="4" width="16" height="16" rx="3"/></svg>
+            <span id="zone-area"></span>
+          </span>
+          <span class="fact-divider" aria-hidden="true"></span>
+          <span class="fact">
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#FF9A3D" stroke-width="2.4" stroke-linejoin="round" aria-hidden="true"><path d="M12 3c1 3 5 5 5 10a5 5 0 0 1-10 0c0-2 1-3.5 2-4.5 0 2 1 3 2 3 0-3-1-5 1-8.5z"/></svg>
+            <span id="timer-label" class="visually-hidden">Burns out in</span>
+            <span id="timer-clock" class="clock"></span>
+            <span id="timer-left" class="muted">left</span>
+          </span>
+        </p>
+        <a id="zone-link" class="zone-link-row" href="#" rel="nofollow noopener ugc" target="_blank" hidden>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#A7D457" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 14a4 4 0 0 0 5.66 0l3-3a4 4 0 0 0-5.66-5.66l-1 1"/><path d="M14 10a4 4 0 0 0-5.66 0l-3 3a4 4 0 0 0 5.66 5.66l1-1"/></svg>
+          <span id="zone-link-text"></span>
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#A9B0D6" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 16L16 8"/><path d="M9 8h7v7"/></svg>
+        </a>
+        <div class="zone-actions">
+          <button id="zone-share" class="zone-action" type="button">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v12"/><path d="M7 8l5-5 5 5"/><path d="M5 12v7a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-7"/></svg>
+            <span id="zone-share-label">Share</span>
+          </button>
+          <a id="zone-report" class="zone-action" href="#">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 21V4"/><path d="M5 4h12l-2 4 2 4H5"/></svg>
+            Report
+          </a>
+        </div>
       </div>
     </section>
 
@@ -72,6 +100,6 @@
   </aside>
 </main>
 
-<script src="map.js?v=4" defer></script>
+<script src="map.js?v=5" defer></script>
 </body>
 </html>
