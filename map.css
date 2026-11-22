@@ -127,7 +127,28 @@
 .tabs button[aria-selected="true"] { background: var(--white); color: var(--navy); }
 .caption { margin: 10px 0 8px; color: var(--mist); font-size: 13px; line-height: 1.45; }
 .board-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 2px; }
-.board-list li { display: grid; grid-template-columns: 30px 32px 1fr auto; align-items: center; gap: 10px; padding: 9px 6px; border-radius: 12px; }
+.board-list > li { border-radius: 14px; border: 1px solid transparent; }
+.board-list > li.open { background: var(--panel); border-color: var(--line); }
+/* A player's row is a button: it shows their zones under it. */
+.board-list .row {
+  width: 100%; display: grid; grid-template-columns: 30px 32px 1fr auto 16px; align-items: center; gap: 10px;
+  padding: 9px 8px 9px 6px; border: 0; border-radius: 13px; background: none; color: inherit; font: inherit; text-align: left; cursor: pointer;
+}
+.board-list .row:hover { background: var(--panel); }
+.board-list .chev { display: grid; color: var(--mist); transition: transform .2s ease; }
+.board-list li.open .chev { transform: rotate(180deg); }
+.player-zones { padding: 0 6px 6px; }
+.player-zones ul { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 4px; }
+.player-zone {
+  width: 100%; min-height: 52px; display: grid; grid-template-columns: 34px 1fr 20px; align-items: center; gap: 10px;
+  padding: 8px 10px; border: 0; border-radius: 12px; background: var(--navy); color: inherit; font: inherit; text-align: left; cursor: pointer;
+}
+.player-zone:hover { background: #1A2045; }
+.player-zone .swatch { display: block; width: 34px; height: 34px; border-radius: 10px; background: var(--white); object-fit: cover; }
+.player-zone .go { display: grid; color: var(--green); }
+.zones-note { display: block; width: 100%; margin: 0; padding: 12px 8px 8px; border: 0; background: none; color: var(--mist); font: 500 14px/1.4 Manrope, system-ui, sans-serif; text-align: center; }
+button.zones-note { cursor: pointer; text-decoration: underline; text-underline-offset: 3px; }
+@media (prefers-reduced-motion: reduce) { .board-list .chev { transition: none; } }
 .board-list .avatar { width: 32px; height: 32px; border-radius: 50%; object-fit: cover; display: grid; place-items: center; font: 800 15px/1 Manrope, sans-serif; color: #141936; background: #1F2650; }
 .board-list .place { font: italic 800 20px/1 'Barlow Condensed', sans-serif; color: var(--mist); text-align: center; }
 .board-list .top { color: var(--white); }

@@ -26,7 +26,11 @@ const NAVY_STYLE = [
 ];
 
 const $ = (id) => document.getElementById(id);
-const state = { map: null, zones: new Map(), pins: new Map(), rows: [], selected: null, tab: 'global', boardSeq: 0, zoneSeq: 0, tick: null };
+const state = {
+  map: null, zones: new Map(), pins: new Map(), rows: [], selected: null, tab: 'global', boardSeq: 0, zoneSeq: 0, tick: null,
+  // Leaderboard: the rows shown, the point the local tab was read at, the player opened and their zones.
+  board: [], boardAt: null, open: null, openList: null, listSeq: 0, returnFocus: null,
+};
 const M_PER_DEG = 111320;
 const PIN_MAX = 30;
 let Pin = null; // the pin overlay class, made once Google Maps has loaded
@@ -96,6 +100,18 @@ function formatCountdown(ms) {
   return d > 0 ? `${d}d ${clock}` : clock;
 }
 
+// "11 days 19 hours", "3 hours 5 minutes", "1 minute": as in the app (mobile/src/lib/format.ts).
+function countdownWords(ms) {
+  const min = Math.max(0, Math.floor(ms / 60000));
+  const d = Math.floor(min / 1440);
+  const h = Math.floor((min % 1440) / 60);
+  const m = min % 60;
+  const unit = (n, one) => `${n} ${one}${n === 1 ? '' : 's'}`;
+  if (d > 0) return h > 0 ? `${unit(d, 'day')} ${unit(h, 'hour')}` : unit(d, 'day');
+  if (h > 0) return m > 0 ? `${unit(h, 'hour')} ${unit(m, 'minute')}` : unit(h, 'hour');
+  return unit(Math.max(1, m), 'minute');
+}
+
 // ---------- notices ----------
 
 function notice(text) {
@@ -151,6 +167,10 @@ function hideZone() {
   history.replaceState(null, '', 'map');
   restyle();
   drawPins();
+  // Back to the zone in the leaderboard it was opened from.
+  const back = state.returnFocus && document.getElementById(state.returnFocus);
+  state.returnFocus = null;
+  if (back) back.focus();
 }
 
 function tickTimer() {
@@ -186,6 +206,8 @@ async function share() {
 
 function setTab(tab) {
   state.tab = tab;
+  state.open = null;
+  state.openList = null;
   $('tab-global').setAttribute('aria-selected', String(tab === 'global'));
   $('tab-local').setAttribute('aria-selected', String(tab === 'local'));
   $('board-caption').textContent =
@@ -203,8 +225,10 @@ async function loadBoard() {
     const at = c ? { lat: c.lat(), lng: c.lng() } : LIMASSOL;
     body = { p_lon: Math.round(at.lng * 100) / 100, p_lat: Math.round(at.lat * 100) / 100 };
   }
+  const at = state.tab === 'local' ? body : null;
   try {
     const rows = await rpc('leaderboard', body);
+    if (seq === state.boardSeq) state.boardAt = at;
     if (seq === state.boardSeq) renderBoard(rows);
   } catch {
     if (seq === state.boardSeq) renderBoard(null);
@@ -213,6 +237,13 @@ async function loadBoard() {
 
 function renderBoard(rows) {
   const list = $('board-list');
+  // A re-read of the board (the local one follows the map) keeps the opened player and the keyboard focus.
+  const focused = document.activeElement && list.contains(document.activeElement) ? document.activeElement.id : null;
+  state.board = rows || [];
+  if (state.open && !state.board.some((r) => r.player_id === state.open)) {
+    state.open = null;
+    state.openList = null;
+  }
   list.replaceChildren();
   if (!rows || rows.length === 0) {
     const li = document.createElement('li');
@@ -227,43 +258,207 @@ function renderBoard(rows) {
     list.append(li);
     return;
   }
-  for (const r of rows) {
+  for (const r of rows) list.append(boardRow(r));
+  if (focused && document.getElementById(focused)) document.getElementById(focused).focus({ preventScroll: true });
+}
+
+/** A player's row: a button that shows or hides their zones under it. */
+function boardRow(r) {
+  const open = state.open === r.player_id;
+  const li = document.createElement('li');
+  li.className = open ? 'open' : '';
+  const button = document.createElement('button');
+  button.type = 'button';
+  button.className = 'row';
+  button.id = `player-${r.player_id}`;
+  button.setAttribute('aria-expanded', String(open));
+  button.setAttribute('aria-controls', `zones-${r.player_id}`);
+  const place = document.createElement('span');
+  place.className = 'place' + (r.place <= 3 ? ' top' : '');
+  place.textContent = r.place;
+  let sw;
+  if (r.avatar_path) {
+    sw = document.createElement('img');
+    sw.src = logoUrl(r.avatar_path);
+    sw.alt = '';
+  } else {
+    sw = document.createElement('span');
+    sw.textContent = (r.display_name || '?').trim().charAt(0).toUpperCase();
+    sw.style.background = zoneColor(r.player_id, r.color);
+  }
+  sw.className = 'avatar';
+  sw.setAttribute('aria-hidden', 'true');
+  const who = document.createElement('span');
+  who.className = 'who';
+  const name = document.createElement('span');
+  name.className = 'name';
+  name.textContent = r.display_name;
+  const meta = document.createElement('span');
+  meta.className = 'meta';
+  meta.textContent = `@${r.handle} · ${r.zones} ${r.zones === 1 ? 'zone' : 'zones'}`;
+  who.append(name, meta);
+  const area = document.createElement('span');
+  area.className = 'area';
+  area.append(String(Math.round(r.area_m2)).replace(/\B(?=(\d{3})+(?!\d))/g, ' '));
+  const unit = document.createElement('span');
+  unit.className = 'unit';
+  unit.textContent = ' m²';
+  area.append(unit);
+  const chev = document.createElement('span');
+  chev.className = 'chev';
+  chev.setAttribute('aria-hidden', 'true');
+  chev.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>';
+  button.append(place, sw, who, area, chev);
+  button.setAttribute('aria-label', `Place ${r.place}, ${r.display_name}, ${formatArea(r.area_m2)}, ${r.zones} ${r.zones === 1 ? 'zone' : 'zones'}`);
+  button.addEventListener('click', () => togglePlayer(r));
+  li.append(button);
+  if (open) li.append(playerZones(r));
+  return li;
+}
+
+/** Opens one player at a time. Only the rows that change are redrawn, so the list is not read out again. */
+function togglePlayer(r) {
+  const before = state.open;
+  const opening = before !== r.player_id;
+  state.open = opening ? r.player_id : null;
+  state.openList = opening ? { status: 'loading' } : null;
+  for (const id of new Set([before, r.player_id])) {
+    const row = id && state.board.find((x) => x.player_id === id);
+    const old = row && document.getElementById(`player-${id}`);
+    if (old) old.parentElement.replaceWith(boardRow(row));
+  }
+  $(`player-${r.player_id}`).focus({ preventScroll: true });
+  if (opening) loadPlayerZones(r.player_id);
+}
+
+/** The opened player's zones, read near the same point as the local board, biggest first. */
+async function loadPlayerZones(playerId) {
+  const seq = ++state.listSeq;
+  const body = { p_player: playerId, ...(state.tab === 'local' && state.boardAt ? state.boardAt : {}) };
+  let list;
+  try {
+    list = { status: 'ready', zones: await rpc('player_zones', body) };
+  } catch {
+    list = { status: 'error' };
+  }
+  if (seq !== state.listSeq || state.open !== playerId) return;
+  state.openList = list;
+  const row = state.board.find((r) => r.player_id === playerId);
+  const box = document.getElementById(`zones-${playerId}`);
+  if (row && box) box.replaceWith(playerZones(row));
+}
+
+function playerZones(r) {
+  const box = document.createElement('div');
+  box.className = 'player-zones';
+  box.id = `zones-${r.player_id}`;
+  const list = state.openList;
+  const note = (text) => {
+    const p = document.createElement('p');
+    p.className = 'zones-note';
+    p.textContent = text;
+    return p;
+  };
+  if (!list || list.status === 'loading') {
+    box.setAttribute('aria-busy', 'true');
+    box.append(note('Loading zones…'));
+    return box;
+  }
+  if (list.status === 'error') {
+    const retry = document.createElement('button');
+    retry.type = 'button';
+    retry.className = 'zones-note';
+    retry.id = `retry-${r.player_id}`;
+    retry.textContent = 'Couldn’t load the zones. Try again.';
+    retry.addEventListener('click', () => {
+      state.openList = { status: 'loading' };
+      box.replaceWith(playerZones(r));
+      loadPlayerZones(r.player_id);
+    });
+    box.append(retry);
+    return box;
+  }
+  if (list.zones.length === 0) {
+    box.append(note('No zones on the map right now.'));
+    return box;
+  }
+  const ul = document.createElement('ul');
+  ul.setAttribute('aria-label', `Zones of ${r.display_name}`);
+  for (const z of list.zones) {
     const li = document.createElement('li');
-    const place = document.createElement('span');
-    place.className = 'place' + (r.place <= 3 ? ' top' : '');
-    place.textContent = r.place;
-    let sw;
-    if (r.avatar_path) {
-      sw = document.createElement('img');
-      sw.src = logoUrl(r.avatar_path);
-      sw.alt = '';
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'player-zone';
+    b.id = `pick-${z.id}`;
+    let pic;
+    if (z.logo_path) {
+      pic = document.createElement('img');
+      pic.src = logoUrl(z.logo_path);
+      pic.alt = '';
     } else {
-      sw = document.createElement('span');
-      sw.textContent = (r.display_name || '?').trim().charAt(0).toUpperCase();
-      sw.style.background = zoneColor(r.player_id, r.color);
+      pic = document.createElement('span');
+      pic.style.background = zoneColor(r.player_id, z.color);
     }
-    sw.className = 'avatar';
-    sw.setAttribute('aria-hidden', 'true');
+    pic.className = 'swatch';
+    pic.setAttribute('aria-hidden', 'true');
     const who = document.createElement('span');
     who.className = 'who';
     const name = document.createElement('span');
     name.className = 'name';
-    name.textContent = r.display_name;
+    name.textContent = z.name;
+    const left = countdownWords(Date.parse(z.expires_at) - Date.now());
     const meta = document.createElement('span');
     meta.className = 'meta';
-    meta.textContent = `@${r.handle} · ${r.zones} ${r.zones === 1 ? 'zone' : 'zones'}`;
+    meta.textContent = `${formatArea(z.area_m2)} · ${left} left`;
     who.append(name, meta);
-    const area = document.createElement('span');
-    area.className = 'area';
-    area.append(String(Math.round(r.area_m2)).replace(/\B(?=(\d{3})+(?!\d))/g, ' '));
-    const unit = document.createElement('span');
-    unit.className = 'unit';
-    unit.textContent = ' m²';
-    area.append(unit);
-    li.append(place, sw, who, area);
-    li.setAttribute('aria-label', `Place ${r.place}, ${r.display_name}, ${formatArea(r.area_m2)}, ${r.zones} ${r.zones === 1 ? 'zone' : 'zones'}`);
-    list.append(li);
+    const go = document.createElement('span');
+    go.className = 'go';
+    go.setAttribute('aria-hidden', 'true');
+    go.innerHTML = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-6-5.3-6-10a6 6 0 0 1 12 0c0 4.7-6 10-6 10z"/><path d="M12 13a2 2 0 1 0 0-4 2 2 0 0 0 0 4z"/></svg>';
+    b.append(pic, who, go);
+    b.setAttribute('aria-label', `${z.name}, ${formatArea(z.area_m2)}, burns out in ${left}. Show on the map`);
+    b.addEventListener('click', () => openZone(z.id, b.id));
+    li.append(b);
+    ul.append(li);
   }
+  box.append(ul);
+  return box;
+}
+
+/** Reads the zone fresh (it may have changed since the list), frames it on the map and opens its card. */
+async function openZone(id, from) {
+  let z;
+  try {
+    [z] = await rpc('zone_by_id', { p_id: id });
+  } catch {
+    notice('Can’t load this zone right now. Check your connection.');
+    return;
+  }
+  if (!z) {
+    notice('This zone has burnt out or was taken over.');
+    if (state.open) loadPlayerZones(state.open);
+    return;
+  }
+  notice('');
+  focusZone(z);
+  state.returnFocus = from || null;
+  const title = $('zone-name');
+  title.tabIndex = -1;
+  title.focus({ preventScroll: true });
+}
+
+/** Opens a zone's card and frames the zone in the part of the map the panel does not cover. */
+function focusZone(z) {
+  state.zones.set(z.id, z);
+  showZone(z);
+  $('panel').scrollTop = 0;
+  if (!state.map) return;
+  const phone = window.matchMedia('(max-width: 760px)').matches;
+  // Right of the column on a computer; above the sheet (now holding the card) on a phone.
+  const pad = phone
+    ? { top: 24, right: 24, left: 24, bottom: Math.round($('panel').getBoundingClientRect().height) + 24 }
+    : { top: 48, right: 72, bottom: 48, left: 408 };
+  state.map.fitBounds(boundsOf(z.geojson), pad);
 }
 
 // ---------- map ----------
@@ -473,16 +668,7 @@ async function startMap(shared) {
     if (state.tab === 'local') loadBoard();
   }, 300);
   state.map.addListener('idle', refresh);
-  if (shared) {
-    state.zones.set(shared.id, shared);
-    // Frame the zone in the part of the map the panel does not cover: right of the column, above the sheet.
-    const phone = window.matchMedia('(max-width: 760px)').matches;
-    const pad = phone
-      ? { top: 24, right: 24, left: 24, bottom: Math.round(window.innerHeight * 0.5) }
-      : { top: 48, right: 72, bottom: 48, left: 408 };
-    state.map.fitBounds(boundsOf(shared.geojson), pad);
-    showZone(shared);
-  }
+  if (shared) focusZone(shared);
 }
 
 function locate() {
