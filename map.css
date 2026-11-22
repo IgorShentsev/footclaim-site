@@ -59,6 +59,7 @@
 .zone-body { padding: 8px 16px 16px; display: flex; flex-direction: column; gap: 12px; }
 .zone-title { min-height: 44px; display: flex; flex-direction: column; justify-content: center; }
 .zone.has-picture .zone-title { margin-left: 90px; }
+.zone h2:focus { outline: none; } /* focused only so screen readers start at the card */
 .zone h2 { margin: 0; font: italic 800 32px/1 'Barlow Condensed', sans-serif; overflow-wrap: anywhere; }
 .zone-by { margin: 2px 0 0; color: var(--mist); font-size: 14px; font-weight: 600; }
 .zone-text { margin: 0; color: var(--white); font-size: 17px; font-weight: 600; line-height: 1.4; overflow-wrap: anywhere; }
